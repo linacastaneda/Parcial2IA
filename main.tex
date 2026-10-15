@@ -1,0 +1,223 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-tabla]{babel}
+\usepackage{lmodern}
+\usepackage{geometry}
+\geometry{margin=2.3cm}
+\usepackage{amsmath,amssymb,booktabs,array,longtable}
+\usepackage{graphicx,float,caption,subcaption}
+\usepackage{xcolor,listings,hyperref,fancyhdr,lastpage}
+\usepackage{microtype}
+\hypersetup{colorlinks=true,linkcolor=blue!45!black,urlcolor=blue!55!black,pdftitle={Parcial 2 - Fundamentos de Inteligencia Artificial}}
+\definecolor{codebg}{RGB}{246,248,251}
+\definecolor{codeblue}{RGB}{17,78,121}
+\lstdefinestyle{python}{language=Python,basicstyle=\ttfamily\scriptsize,keywordstyle=\color{codeblue}\bfseries,commentstyle=\color{gray},stringstyle=\color{teal},backgroundcolor=\color{codebg},numbers=left,numberstyle=\tiny\color{gray},stepnumber=1,numbersep=7pt,breaklines=true,breakatwhitespace=true,showstringspaces=false,frame=single,rulecolor=\color{black!15},tabsize=4,captionpos=b}
+\lstset{style=python}
+\pagestyle{fancy}\fancyhf{}\lhead{Fundamentos de Inteligencia Artificial}\rhead{Parcial 2}\cfoot{\thepage\ de \pageref{LastPage}}\setlength{\headheight}{14pt}
+\newcommand{\figura}[2]{\begin{figure}[H]\centering\includegraphics[width=.88\linewidth]{figuras/#1}\caption{#2}\end{figure}}
+\begin{document}
+\begin{titlepage}
+\centering
+\vspace*{2.1cm}
+{\Large Universidad Sergio Arboleda\par}
+\vspace{1.2cm}
+{\Huge\bfseries Parcial 2\par}
+\vspace{.4cm}
+{\LARGE Fundamentos de Inteligencia Artificial\par}
+\vspace{.6cm}
+{\large Algoritmos genéticos, ascenso de colinas, temple simulado, ACO y PSO\par}
+\vspace{1.7cm}
+{\large\bfseries Estudiante:} Lina María Castañeda Hernández\par
+\vspace{.35cm}
+{\large\bfseries Fecha:} 14 de octubre de 2026\par
+\vfill
+{\large Soluciones matemáticas, análisis conceptual, implementaciones en Python y resultados reproducibles\par}
+\vspace{.7cm}
+{\small Informe elaborado conforme a los cinco puntos del documento \emph{Parcial 2}. Los scripts originales se incluyen en la carpeta \texttt{codigo/}; sus salidas, en \texttt{salidas/}.\par}
+\end{titlepage}
+\tableofcontents\newpage
+\section*{Introducción y metodología}\addcontentsline{toc}{section}{Introducción y metodología}
+Este informe resuelve los cinco problemas del parcial, respetando sus componentes A (matemático y conceptual) y B (implementación). Se utilizaron los archivos Python suministrados y se volvieron a ejecutar con las semillas establecidas para contrastar los resultados con las salidas entregadas. Las figuras se construyeron a partir de las trazas de ejecución. La propuesta del punto 2.A.5 es \emph{conceptual}; no altera el código obligatorio del apartado B. Los resultados de las ejecuciones con semillas fijas ilustran el comportamiento observado, sin constituir garantías generales de convergencia.
+
+\section{Punto 1. Algoritmos evolutivos y algoritmos genéticos}
+Se maximiza $f(x)=x^2$, con $x\in\{0,1,\ldots,31\}$ y cromosomas binarios de cinco bits. La población inicial es $P=\{00101,01100,10010,11001\}$.
+\subsection{A. Componente matemático y conceptual}
+\subsubsection{A.1. Decodificación y aptitud}
+Se convierte cada cadena binaria a decimal mediante las potencias de $2$ correspondientes a sus cinco posiciones. Por ejemplo, $00101_2=4+1=5$, y su aptitud es $5^2=25$.
+\begin{table}[H]\centering\caption{Población inicial y aptitud}\begin{tabular}{ccc}\toprule Cromosoma & Valor decimal $x$ & $f(x)=x^2$\\\midrule 00101 & 5 & 25\\01100 & 12 & 144\\10010 & 18 & 324\\11001 & 25 & 625\\\bottomrule\end{tabular}\end{table}
+\subsubsection{A.2. Selección por ruleta}
+La aptitud total es $\sum_i f(x_i)=25+144+324+625=1118$. La probabilidad de selección del cromosoma $i$ es $p_i=f(x_i)/1118$.
+\begin{align*}
+p_{00101}&=25/1118\approx0.02236=2.24\%,&p_{01100}&=144/1118\approx0.12880=12.88\%,\\
+p_{10010}&=324/1118\approx0.28980=28.98\%,&p_{11001}&=625/1118\approx0.55903=55.90\%.
+\end{align*}
+La ruleta favorece individuos más aptos, pero no garantiza que el cromosoma de mayor aptitud sea seleccionado en cada sorteo.
+\subsubsection{A.3. Cruce de un punto}
+Se seleccionan $01100$ y $11001$, cortando después del segundo bit:
+\[
+01\mid100,\qquad11\mid001.
+\]
+Intercambiando los segmentos derechos:
+\[
+\boxed{01\mid001=01001_2=9,\quad f(9)=81},\qquad
+\boxed{11\mid100=11100_2=28,\quad f(28)=784}.
+\]
+\subsubsection{A.4. Mutación del primer descendiente}
+El primer descendiente es $01001$. Al invertir su último bit se obtiene $01000_2=8$, con $f(8)=64$. Antes de mutar, su aptitud era $f(9)=81$; el cambio inmediato es $64-81=-17$.
+\subsubsection{A.5. Interpretación de los operadores}
+Un algoritmo genético es un tipo de algoritmo evolutivo: ambos utilizan una población de soluciones que evoluciona mediante selección y variación, mientras que el algoritmo genético emplea habitualmente representaciones de cromosomas y operadores de cruce y mutación. La \textbf{selección} incrementa la participación reproductiva de soluciones aptas; el \textbf{cruce} recombina material de dos padres; y la \textbf{mutación} introduce variabilidad al modificar algunos bits. Una mutación puede empeorar la aptitud inmediata y, aun así, resultar útil porque permite explorar configuraciones que no estaban presentes y ayuda a evitar la pérdida prematura de diversidad. No garantiza por sí sola mejoras posteriores.
+\subsection{B. Implementación en Python}
+El programa utiliza selección por ruleta, cruce de un punto con probabilidad $0.8$, mutación independiente por bit con probabilidad $0.05$, elitismo de un individuo, población de tamaño cuatro, veinte generaciones y semilla 42. La función \texttt{decodificar} convierte cromosomas a enteros; \texttt{aptitud} calcula $x^2$; \texttt{seleccion\_ruleta} hace selección proporcional a aptitud; \texttt{cruce\_un\_punto} recombina las cadenas; \texttt{mutar} considera cada bit independientemente; y \texttt{algoritmo\_genetico} coordina las generaciones. El mejor cromosoma se copia sin cambios a la nueva población antes de crear los demás descendientes.
+\figura{genetico.png}{Mejor aptitud por generación del algoritmo genético; óptimo teórico de 961.}
+\begin{table}[H]\centering\caption{Síntesis de la ejecución del algoritmo genético}\begin{tabular}{ll}\toprule Indicador & Resultado\\\midrule Mejor cromosoma final & \texttt{11111}\\Valor decimal & $31$\\Mejor aptitud & $961$\\Generaciones 1--15 & mejor aptitud $841$\\Generaciones 16--20 & mejor aptitud $961$\\Óptimo matemático & $f(31)=961$\\\bottomrule\end{tabular}\end{table}
+El historial completo fue
+\[
+[\underbrace{841,\ldots,841}_{15\text{ generaciones}},\underbrace{961,\ldots,961}_{5\text{ generaciones}}].
+\]
+\paragraph{Interpretación.} Sí se encontró el óptimo global: la función $x^2$ es creciente en el dominio no negativo $0\le x\le31$ y alcanza su máximo $961$ en $x=31$, representado por \texttt{11111}. Sin embargo, veinte generaciones no garantizan alcanzar ese cromosoma en todas las ejecuciones: la selección, el cruce y la mutación son estocásticos y pueden no producir la combinación óptima dentro del presupuesto de iteraciones. El elitismo conserva lo mejor ya descubierto, pero no garantiza descubrir el máximo.
+\subsubsection*{Código completo del punto 1}
+\lstinputlisting[caption={Implementación original del algoritmo genético},label={lst:gen}]{codigo/punto1_genetico.py}
+
+\section{Punto 2. Ascenso de colinas y óptimos locales}
+Se maximiza la función discreta siguiente y se consideran solamente los vecinos $x-1$ y $x+1$ que estén dentro del dominio:
+\begin{table}[H]\centering\begin{tabular}{c|rrrrrrrrr}\toprule$x$&0&1&2&3&4&5&6&7&8\\\midrule$f(x)$&1&4&7&5&3&6&9&8&5\\\bottomrule\end{tabular}\end{table}
+\subsection{A. Componente matemático y conceptual}
+\subsubsection{A.1. Ejecución desde $x_0=0$}
+Desde $x=0$, el único vecino es $1$ y $f(1)=4>f(0)=1$; se avanza a $1$. Desde $1$, se selecciona $2$, pues $f(2)=7>f(0)=1$, y mejora respecto a $f(1)=4$. En $2$, sus vecinos $1$ y $3$ tienen aptitudes $4$ y $5$, inferiores a $7$. Se detiene:
+\[\boxed{0\to1\to2,\quad x_{\rm final}=2,\quad f(2)=7}.\]
+\subsubsection{A.2. Ejecución desde $x_0=4$}
+En $4$, los vecinos $3$ y $5$ presentan aptitudes $5$ y $6$: se elige $5$. Desde $5$, el vecino $6$ tiene aptitud $9$, mayor que $f(5)=6$. En $6$, los vecinos tienen aptitudes $6$ y $8$, ambas menores que $9$. Así:
+\[\boxed{4\to5\to6,\quad x_{\rm final}=6,\quad f(6)=9}.\]
+\subsubsection{A.3. Máximos locales y global}
+El estado $x=2$ es un máximo local, ya que $f(2)=7>f(1)=4$ y $f(2)=7>f(3)=5$. El estado $x=6$ también es máximo local y es el \textbf{máximo global}, pues $f(6)=9$ es el mayor valor de toda la tabla.
+\subsubsection{A.4. Influencia del inicio}
+El método es codicioso y solo admite mejoras estrictas. Desde $0,1,2,3$ termina en $x=2$; desde $4,5,6,7,8$ termina en $x=6$. El inicio determina la región del espacio de búsqueda que se explora y puede conducir a máximos diferentes, porque el algoritmo no atraviesa descensos temporales para salir de un máximo local.
+\subsubsection{A.5. Propuesta: reinicios aleatorios guiados por memoria}
+Se propone ejecutar varias búsquedas desde puntos de partida seleccionados aleatoriamente \emph{sin repetir los inicios ya utilizados}. La memoria almacena esos estados iniciales y la mejor solución hallada. Cada búsqueda individual mantiene la regla original de ascenso de colinas: seleccionar el mejor vecino y moverse solo ante una mejora estricta. Los reinicios favorecen la exploración de regiones distintas, y la memoria evita repetir exactamente una búsqueda determinista desde el mismo inicio. Esto no impide que diferentes inicios desemboquen en un mismo máximo local ni garantiza el óptimo con pocos intentos. Si hay $n$ inicios posibles, el almacenamiento de los ya utilizados requiere hasta $O(n)$ espacio. Para $k$ ejecuciones de costo individual $T$, el trabajo de búsqueda cuesta aproximadamente $O(kT)$, además de seleccionar y administrar los inicios no utilizados. \textbf{Esta propuesta es exclusivamente conceptual y no modifica la implementación obligatoria del apartado B.}
+\subsection{B. Implementación en Python}
+La función \texttt{ascenso\_colinas(valores, inicio)} registra el inicio, obtiene vecinos válidos, escoge el de mayor aptitud con \texttt{max(..., key=...)} y avanza solo si la mejora es estricta. En caso contrario, devuelve el estado final y la trayectoria.
+\begin{table}[H]\centering\caption{Ejecuciones desde los nueve estados iniciales}\begin{tabular}{rllr}\toprule Inicio & Trayectoria & Final & $f(\text{final})$\\\midrule
+0&$0\to1\to2$&2&7\\1&$1\to2$&2&7\\2&$2$&2&7\\3&$3\to2$&2&7\\4&$4\to5\to6$&6&9\\5&$5\to6$&6&9\\6&$6$&6&9\\7&$7\to6$&6&9\\8&$8\to7\to6$&6&9\\\bottomrule\end{tabular}\end{table}
+Cinco de los nueve inicios llegan al máximo global, por lo que la proporción es
+\[\boxed{5/9\approx0.5556=55.56\%}.\]
+\paragraph{Relación con reinicios aleatorios.} Si cada inicio se elige de forma independiente y uniforme entre los nueve estados, cada ejecución tiene probabilidad $5/9$ de encontrar el máximo global. Con $k$ reinicios independientes \emph{con reemplazo}, la probabilidad de encontrarlo al menos una vez es $1-(4/9)^k$. En la propuesta con memoria y \emph{sin reemplazo}, esa fórmula de independencia no aplica directamente; su ventaja es evitar repetir inicios, y al agotar los nueve inicios necesariamente se habrá evaluado el estado $x=6$ en este problema concreto.
+\subsubsection*{Código completo del punto 2}
+\lstinputlisting[caption={Implementación original de ascenso de colinas}]{codigo/punto2_ascenso_colinas.py}
+
+\section{Punto 3. Temple simulado y aceptación probabilística}
+Se minimiza $E(x)=x^2$, $x\in\{-5,\dots,5\}$. La regla de aceptación, con $\Delta E=E(x_{\mathrm{nuevo}})-E(x_{\mathrm{actual}})$ y $T>0$, es
+\[
+P(\mathrm{aceptar})=\begin{cases}1,&\Delta E\le0,\\e^{-\Delta E/T},&\Delta E>0.\end{cases}
+\]
+Una solución peor se acepta si el valor uniforme proporcionado cumple $u<P$.
+\subsection{A. Componente matemático y conceptual}
+\subsubsection{A.1. Cálculos de las tres transiciones}
+\paragraph{Caso A.} Actual $x=3$, candidato $x=2$, $T=5$, $u=0.70$: $E(3)=9$, $E(2)=4$, $\Delta E=4-9=-5$. Como mejora la energía, $P=1$ y se \textbf{acepta}.
+\paragraph{Caso B.} Actual $x=2$, candidato $x=3$, $T=5$, $u=0.30$: $\Delta E=9-4=5>0$; $P=e^{-5/5}=e^{-1}\approx0.367879$. Como $0.30<0.367879$, se \textbf{acepta} el empeoramiento.
+\paragraph{Caso C.} Igual transición, pero $T=1$, $u=0.30$: $\Delta E=5$ y $P=e^{-5}\approx0.006738$. Como $0.30>0.006738$, se \textbf{rechaza}; permanece en $x=2$.
+\begin{table}[H]\centering\caption{Comparación de las tres decisiones}\begin{tabular}{cccccc}\toprule Caso & Actual & Candidato & $\Delta E$ & $P$ & Decisión\\\midrule A&3&2&$-5$&$1$&Aceptar\\ B&2&3&$5$&$0.367879$&Aceptar\\ C&2&3&$5$&$0.006738$&Rechazar\\\bottomrule\end{tabular}\end{table}
+\subsubsection{A.2. Efecto de la temperatura}
+Para un aumento fijo $\Delta E>0$, $e^{-\Delta E/T}$ crece con $T$. Una temperatura alta permite aceptar empeoramientos más frecuentemente y favorece la exploración; al disminuir $T$, la aceptación de soluciones peores se reduce y la búsqueda se concentra en las soluciones prometedoras. Para $\Delta E=5$, la probabilidad es $36.79\%$ con $T=5$ y apenas $0.674\%$ con $T=1$.
+\subsubsection{A.3. Enfriamiento demasiado rápido}
+Si la temperatura decrece precipitadamente, la aceptación de aumentos de energía puede volverse prácticamente nula antes de explorar suficientemente el dominio. Esto favorece la convergencia prematura hacia mínimos locales. Un enfriamiento gradual prolonga la exploración, pero no garantiza el óptimo global. En el programa se utiliza $T_{k+1}=0.90T_k$.
+\subsubsection{A.4. Comparación con ascenso de colinas}
+El ascenso de colinas del punto 2 selecciona el mejor vecino y solo avanza si mejora estrictamente la aptitud; para comparar bajo minimización equivaldría a un descenso de colinas que rechaza empeoramientos. El temple simulado escoge un vecino aleatorio, acepta mejoras (o igualdades) siempre y acepta empeoramientos con probabilidad $e^{-\Delta E/T}$. Esta flexibilidad puede ayudarlo a escapar de óptimos locales. La temperatura regula el balance exploración--explotación.
+\subsection{B. Implementación en Python}
+Se parte de $x_0=5$, $T_0=10$, cien iteraciones, vecinos aleatorios válidos $x\pm1$, enfriamiento geométrico del $10\%$ y semilla 42. Se guardan el estado actual, la mejor solución y las energías de ambos en cada iteración.
+\begin{table}[H]\centering\caption{Evolución inicial y resultado final del temple simulado}\begin{tabular}{rrrrrr}\toprule Iteración&Temperatura&Actual&E. actual&Mejor&E. mejor\\\midrule 1&10.00000&4&16&4&16\\2&9.00000&3&9&3&9\\3&8.10000&4&16&3&9\\5&6.56100&2&4&2&4\\6&5.90490&1&1&1&1\\9&4.30467&0&0&0&0\\10&3.87420&$-1$&1&0&0\\100&0.00030&0&0&0&0\\\bottomrule\end{tabular}\end{table}
+\figura{temple_energia.png}{Energía actual y mejor energía acumulada por iteración.}
+\figura{temple_temperatura.png}{Descenso geométrico de la temperatura durante las cien iteraciones.}
+La mejor solución hallada es $x=0$, con energía mínima $E(0)=0$; aparece por primera vez en la iteración 9. El historial evidencia que, tras encontrar el óptimo, en la iteración 10 el estado actual se desplazó a $x=-1$, cuya energía es 1. Por ello es indispensable conservar por separado la mejor solución: el \emph{estado actual} puede empeorar al aceptar movimientos exploratorios, mientras que el registro \emph{mejor} evita perder la mejor energía alcanzada.
+\subsubsection*{Código completo del punto 3}
+\lstinputlisting[caption={Implementación original del temple simulado}]{codigo/punto3_temple_simulado.py}
+
+\section{Punto 4. ACO: rutas y feromonas}
+\subsection{A. Componente matemático y conceptual}
+Una hormiga se encuentra en A y puede viajar a B, C o D. Se dispone de $(d_{AB},\tau_{AB})=(2,1)$, $(d_{AC},\tau_{AC})=(4,2)$, $(d_{AD},\tau_{AD})=(5,1)$; se fijan $\alpha=1$, $\beta=2$ y $\eta_{Aj}=1/d_{Aj}$.
+\subsubsection{A.1. Pesos y probabilidades}
+Los pesos son $w_{Aj}=\tau_{Aj}^{\alpha}\eta_{Aj}^{\beta}$:
+\begin{align*}
+w_{AB}&=1(1/2)^2=0.25,&w_{AC}&=2(1/4)^2=0.125,&w_{AD}&=1(1/5)^2=0.04.
+\end{align*}
+Su suma es $W=0.25+0.125+0.04=0.415$. Por normalización:
+\begin{align*}
+p_{AB}&=0.25/0.415\approx0.602410=60.24\%,\\
+p_{AC}&=0.125/0.415\approx0.301205=30.12\%,\\
+p_{AD}&=0.04/0.415\approx0.096386=9.64\%.
+\end{align*}
+\subsubsection{A.2. Alternativa más probable}
+A$\to$B es la alternativa con mayor probabilidad ($60.24\%$), pero no está garantizada: A$\to$C y A$\to$D tienen probabilidades positivas. La probabilidad de elegir alguna de esas alternativas es $1-0.602410\approx39.76\%$. La selección probabilística mantiene oportunidades de explorar rutas distintas de la más atractiva.
+\subsubsection{A.3. Evaporación y depósito}
+Con $\rho=0.2$, $Q=10$, $L=10$ y depósito únicamente sobre A$\to$B, se tiene $\Delta\tau_{AB}=Q/L=1$, y los demás depósitos son cero. Aplicando $\tau'=(1-\rho)\tau+\Delta\tau$:
+\begin{align*}
+\tau'_{AB}&=0.8(1)+1=\boxed{1.8},\\
+\tau'_{AC}&=0.8(2)+0=\boxed{1.6},\\
+\tau'_{AD}&=0.8(1)+0=\boxed{0.8}.
+\end{align*}
+\subsubsection{A.4. Función de la evaporación y riesgo de dominio de feromonas}
+La evaporación reduce gradualmente la influencia de depósitos antiguos y evita que las rutas no reforzadas conserven indefinidamente su feromona. Si las concentraciones de feromona dominaran excesivamente las probabilidades, las hormigas podrían seleccionar casi siempre una ruta reforzada inicialmente, incluso siendo subóptima, y reducir la exploración de alternativas. Este realimentación puede provocar estancamiento o convergencia prematura. La evaporación contribuye al equilibrio exploración--explotación, aunque no elimina por sí misma todo riesgo de estancamiento.
+\subsection{B. Implementación en Python}
+Se trabaja con las rutas completas A-B-Z ($L=6$), A-C-Z ($L=8$) y A-D-Z ($L=10$), cada una con feromona inicial 1. Durante veinte iteraciones, diez hormigas por iteración eligen con las mismas probabilidades calculadas al comienzo de la iteración. A continuación se evapora $20\%$ de cada feromona y cada hormiga deposita $Q/L_r$ en la ruta elegida. Se usan $\alpha=1$, $\beta=2$, $Q=10$ y semilla 42.
+Inicialmente, los pesos son $1/36$, $1/64$ y $1/100$ y las probabilidades aproximadas son $52.02\%$, $29.26\%$ y $18.73\%$. Durante la primera iteración las hormigas eligieron seis veces A-B-Z, tres A-C-Z y una A-D-Z; las feromonas quedaron:
+\begin{align*}
+\tau_{ABZ}^{(1)}&=0.8+6(10/6)=10.8,\\
+\tau_{ACZ}^{(1)}&=0.8+3(10/8)=4.55,\\
+\tau_{ADZ}^{(1)}&=0.8+1(10/10)=1.8.
+\end{align*}
+\begin{table}[H]\centering\caption{Resultados de ACO: veinte iteraciones y doscientas elecciones}\begin{tabular}{lrrr}\toprule Ruta & Frecuencia & Porcentaje & Feromona final\\\midrule A-B-Z&187&93.5\%&79.2315\\A-C-Z&12&6.0\%&2.3580\\A-D-Z&1&0.5\%&0.0259\\\bottomrule\end{tabular}\end{table}
+\figura{aco_probabilidades.png}{Evolución de probabilidades de selección al inicio de cada iteración.}
+\figura{aco_feromonas.png}{Evolución de las feromonas al final de cada iteración.}
+La mejor ruta observada fue \textbf{A-B-Z}, longitud $6$. La heurística $(1/L_r)^2$ favorece las rutas más cortas, mientras que el depósito $Q/L_r$ aporta un refuerzo mayor por hormiga sobre rutas de menor longitud. La experiencia colectiva se codifica mediante las feromonas acumuladas: las elecciones de una iteración alteran las probabilidades de las siguientes. En esta corrida A-B-Z dominó las elecciones; el resultado es empírico y no implica una garantía de selección en cada intento.
+\subsubsection*{Código completo del punto 4}
+\lstinputlisting[caption={Implementación original del ACO simplificado}]{codigo/punto4_aco.py}
+
+\section{Punto 5. PSO: movimiento y memoria}
+\subsection{A. Componente matemático y conceptual}
+Se minimiza $f(x)=x^2$ con una partícula en $x=4$, velocidad $v=-1$, mejor personal $pbest=2$, mejor global $gbest=1$ y parámetros $w=0.5$, $c_1=c_2=1.5$, $r_1=0.4$, $r_2=0.6$.
+\subsubsection{A.1. Inercia, componente cognitivo y componente social}
+La actualización es $v'=wv+c_1r_1(pbest-x)+c_2r_2(gbest-x)$:
+\begin{align*}
+\underbrace{wv}_{\text{inercia}}&=0.5(-1)=\boxed{-0.5},\\
+\underbrace{c_1r_1(pbest-x)}_{\text{cognitivo}}&=1.5(0.4)(2-4)=\boxed{-1.2},\\
+\underbrace{c_2r_2(gbest-x)}_{\text{social}}&=1.5(0.6)(1-4)=\boxed{-2.7}.
+\end{align*}
+Las tres contribuciones favorecen un desplazamiento hacia valores menores de $x$, y la de mayor magnitud es la social.
+\subsubsection{A.2. Nueva velocidad, posición y aptitud}
+\[
+v'=-0.5-1.2-2.7=\boxed{-4.4},\quad x'=4+(-4.4)=\boxed{-0.4},\quad f(x')=(-0.4)^2=\boxed{0.16}.
+\]
+La nueva aptitud mejora la anterior, $f(4)=16$, aunque el movimiento sobrepasa las posiciones de referencia $pbest$ y $gbest$.
+\subsubsection{A.3. Actualización de $pbest$ y $gbest$}
+Como $f(-0.4)=0.16<f(2)=4$, corresponde actualizar $pbest'=-0.4$. Asimismo, $0.16<f(1)=1$, y suponiendo, como indica el enunciado, que las demás partículas no han mejorado, debe actualizarse $gbest'=-0.4$.
+\subsubsection{A.4. Mejor personal frente a mejor global}
+$\mathit{pbest}$ es la mejor posición histórica de una partícula: registra su experiencia individual y determina el componente cognitivo. $\mathit{gbest}$ es la mejor posición histórica conocida en el enjambre: representa la experiencia colectiva y determina el componente social. Cada partícula conserva su propio $pbest$, pero en la variante global de PSO comparte el mismo $gbest$.
+\subsubsection{A.5. Intercambio de información: PSO frente a ACO}
+En PSO, el intercambio ocurre a través de la posición global $gbest$, que influye directamente en las velocidades mediante el término social. En ACO, la comunicación es indirecta, por modificación del entorno: las hormigas depositan feromonas sobre las rutas y las siguientes utilizan esos rastros en sus probabilidades de elección. Ambos métodos aprovechan la experiencia del grupo, pero PSO representa el conocimiento compartido con una posición y ACO mediante intensidades de feromona distribuidas sobre alternativas.
+\subsection{B. Implementación de PSO en dos dimensiones}
+Se minimiza $f(x,y)=x^2+y^2$ en $[-5,5]^2$ mediante diez partículas inicializadas uniformemente con velocidad cero, $w=0.5$, $c_1=c_2=1.5$, treinta iteraciones y semilla 42. Los valores $r_1,r_2$ se regeneran independientemente por partícula, coordenada e iteración. Cada actualización de velocidad utiliza el mismo $gbest$ disponible al comienzo de esa iteración; solo después de mover y evaluar el enjambre se actualizan memorias individuales y global. Se limitan las coordenadas fuera de $[-5,5]$ y se anula exclusivamente la componente correspondiente de velocidad.
+\begin{table}[H]\centering\caption{Convergencia registrada del mejor valor global}\begin{tabular}{rr}\toprule Iteración & Mejor $f(x,y)$\\\midrule 0&$7.760067$\\1&$0.653273$\\5&$0.067505$\\10&$0.011169$\\15&$0.00032619$\\20&$8.880881\times10^{-6}$\\25&$5.964811\times10^{-7}$\\30&$3.433969\times10^{-8}$\\\bottomrule\end{tabular}\end{table}
+\figura{pso_convergencia.png}{Evolución de la mejor aptitud global en escala logarítmica.}
+Al finalizar se obtuvo:
+\[
+\boxed{gbest\approx(-0.000185,\ 0.000014)},\qquad
+\boxed{f(gbest)\approx3.433969\times10^{-8}}.
+\]
+El mínimo teórico ocurre en $(0,0)$ con valor $0$, ya que $x^2+y^2\ge0$. La ejecución se aproxima estrechamente a ese punto, pero no lo alcanza exactamente. Esto es compatible con movimientos continuos regidos por velocidades y factores aleatorios, un presupuesto finito de iteraciones y actualizaciones que no fuerzan a pasar por el origen. La mejor aptitud global acumulada no aumenta, porque $gbest$ solo se sustituye al encontrar una mejora estricta.
+\subsubsection*{Código completo del punto 5}
+\lstinputlisting[caption={Implementación original de PSO bidimensional}]{codigo/punto5_pso.py}
+
+\section*{Conclusiones generales}\addcontentsline{toc}{section}{Conclusiones generales}
+Los cinco métodos resuelven problemas de optimización mediante mecanismos diferentes. El algoritmo genético explora combinaciones de cromosomas con selección, cruce y mutación; ascenso de colinas aplica mejoras locales estrictas y depende del estado inicial; el temple simulado acepta probabilísticamente empeoramientos según su temperatura; ACO coordina elecciones mediante feromonas y evaporación; y PSO combina inercia, memoria individual y una referencia global. Las ejecuciones reproducidas verifican la implementación de los cinco apartados B. Las conclusiones experimentales corresponden a las semillas y parámetros exigidos y deben distinguirse de cualquier garantía matemática de convergencia.
+
+\section*{Archivos y reproducibilidad}\addcontentsline{toc}{section}{Archivos y reproducibilidad}
+Este proyecto se compila mediante \texttt{main.tex} en Overleaf con \texttt{pdfLaTeX}. Contiene los cinco scripts originales en \texttt{codigo/}, las cinco trazas entregadas en \texttt{salidas/} y seis figuras en \texttt{figuras/}. Para ejecutar localmente:
+\begin{lstlisting}[language=bash,numbers=none]
+python codigo/punto1_genetico.py
+python codigo/punto2_ascenso_colinas.py
+python codigo/punto3_temple_simulado.py
+python codigo/punto4_aco.py
+python codigo/punto5_pso.py
+\end{lstlisting}
+El último script requiere \texttt{numpy}. El informe hace explícita la diferencia entre los valores teóricos y las salidas producidas por una ejecución particular.
+\end{document}
